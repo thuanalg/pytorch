@@ -15,6 +15,7 @@ at::DataPtr THManagedMapAllocator::makeDataPtr(
     const char* filename,
     int flags,
     size_t size) {
+  const char* abc = "NGUYEN THAI THUAN";
   auto* context =
       new THManagedMapAllocator(manager_handle, filename, flags, size);
   return {context->data(), context, &deleteTHManagedMapAllocator, at::kCPU};

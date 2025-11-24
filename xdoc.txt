@@ -1,0 +1,142 @@
+| Thuật ngữ                       | Nghĩa                                                             |
+| ------------------------------- | ----------------------------------------------------------------- |
+| **ANPR**                        | Automatic Number Plate Recognition → Nhận dạng biển số xe tự động |
+| **LPR**                         | License Plate Recognition → đồng nghĩa ANPR                       |
+| **ALPR**                        | Automatic License Plate Recognition → cũng là ANPR                |
+| **Plate Detection**             | Phát hiện vị trí biển số trên ảnh                                 |
+| **Plate Localization**          | Xác định vùng biển số                                             |
+| **Plate Extraction / Cropping** | Cắt ảnh biển số ra khỏi ảnh gốc                                   |
+| **Plate OCR**                   | Đọc ký tự trên biển số                                            |
+| **Character Recognition**       | Phân loại ký tự (nếu tách từng ký tự)                             |
+| **End-to-End ANPR**             | Hệ thống phát hiện + OCR gộp thành 1 model                        |
+
+| Thuật ngữ                    | Nghĩa                                               |
+| ---------------------------- | --------------------------------------------------- |
+| **Grayscale**                | Ảnh xám 1 kênh (không phải ảnh đen trắng binary)    |
+| **Binary Image**             | Ảnh trắng đen (0–1), thường không phù hợp cho ANPR  |
+| **Thresholding**             | Chuyển ảnh thành trắng–đen bằng ngưỡng              |
+| **Adaptive Thresholding**    | Ngưỡng động theo vùng                               |
+| **Morphology**               | Các phép hình thái học (erode, dilate, open, close) |
+| **Gaussian Blur**            | Làm mờ để giảm nhiễu                                |
+| **Canny Edge**               | Phát hiện cạnh                                      |
+| **Perspective Transform**    | Chỉnh nghiêng biển số                               |
+| **Deskewing**                | Sửa nghiêng / xoay ảnh                              |
+| **ROI (Region of Interest)** | Vùng quan tâm (vùng chứa biển số)                   |
+| **Segmentation**             | Tách ký tự (nếu không dùng CRNN)                    |
+
+| Thuật ngữ                  | Nghĩa                                                         |
+| -------------------------- | ------------------------------------------------------------- |
+| **Object Detection**       | Bài toán tìm bounding box                                     |
+| **Classification**         | Phân loại 1 ký tự                                             |
+| **Sequence Modeling**      | Xử lý chuỗi ký tự (OCR)                                       |
+| **CTC Loss**               | Connectionist Temporal Classification – loss đặc biệt cho OCR |
+| **CNN**                    | Convolutional Neural Network → backbone cho detection/OCR     |
+| **RNN**                    | Recurrent Neural Network                                      |
+| **LSTM/GRU**               | Mạng RNN cải tiến cho chuỗi                                   |
+| **CRNN**                   | CNN + RNN + CTC → chuẩn cho OCR biển số                       |
+| **Transformer**            | Mạng attention mạnh (TrOCR)                                   |
+| **Backbone**               | Tầng trích xuất đặc trưng                                     |
+| **Feature Map**            | Bản đồ đặc trưng                                              |
+| **Inference**              | Chạy model để dự đoán                                         |
+| **Training / Fine-tuning** | Huấn luyện mô hình                                            |
+| **Augmentation**           | Biến đổi ảnh để tăng dữ liệu                                  |
+
+| Model                  | Mô tả                               |
+| ---------------------- | ----------------------------------- |
+| **YOLOv3/v4/v5/v7/v8** | Phổ biến nhất cho phát hiện biển số |
+| **YOLO-NAS / YOLOv8n** | Nhẹ, phù hợp laptop                 |
+| **SSD**                | Phát hiện nhanh nhưng kém YOLO      |
+| **Faster R-CNN**       | Chính xác nhưng chậm                |
+
+| Model                       | Mô tả                                   |
+| --------------------------- | --------------------------------------- |
+| **CRNN**                    | Chuẩn cho OCR biển số: CNN → LSTM → CTC |
+| **CNN Classifier**          | Dùng khi tách ký tự                     |
+| **Transformer OCR (TrOCR)** | Accuracy cao nhưng nặng                 |
+| **Attention OCR**           | OCR thông minh, tự đọc toàn chuỗi       |
+
+| Thuật ngữ                | Nghĩa                                  |
+| ------------------------ | -------------------------------------- |
+| **Epoch**                | 1 vòng học hết dataset                 |
+| **Batch size**           | Số ảnh mỗi lần cập nhật                |
+| **Learning Rate (LR)**   | Tốc độ học                             |
+| **Optimizer**            | Thuật toán tối ưu (Adam, SGD, AdamW)   |
+| **Loss Function**        | Hàm mất mát (CTC, BCE, CE)             |
+| **Overfitting**          | Model học thuộc dữ liệu, kém tổng quát |
+| **Underfitting**         | Không học đủ                           |
+| **Train/Val/Test Split** | Chia dữ liệu 70/20/10                  |
+
+| Thuật ngữ         | Nghĩa                                           |
+| ----------------- | ----------------------------------------------- |
+| **Edge Device**   | Thiết bị chạy trực tiếp (camera, NVR)           |
+| **Embedded ANPR** | ANPR trên thiết bị nhỏ (Jetson, ARM, STM32+NPU) |
+| **Pipeline**      | Quy trình từ input → output                     |
+| **Latency**       | Độ trễ                                          |
+| **Throughput**    | Số ảnh xử lý mỗi giây                           |
+
+| Thuật ngữ             | Nghĩa                           |
+| --------------------- | ------------------------------- |
+| **Vietnamese plates** | Biển số Việt Nam                |
+| **Multi-line Plates** | Biển 2 dòng                     |
+| **Tilted Plates**     | Biển nghiêng                    |
+| **Occluded Plates**   | Biển bị che                     |
+| **Night Plates**      | Biển ban đêm                    |
+| **Reflective Plates** | Biển phản sáng (thường khó OCR) |
+
+
+| Viết tắt     | Tên đầy đủ                        | Mô tả                                                         |
+| ------------ | --------------------------------- | ------------------------------------------------------------- |
+| YOLO         | **You Only Look Once**            | One-stage detection, cực nhanh, real-time, phổ biến cho ANPR. |
+| SSD          | **Single Shot MultiBox Detector** | One-stage detection, nhẹ, tốc độ cao, accuracy thấp hơn YOLO. |
+| R-CNN        | **Regions with CNN features**     | Two-stage detection, chính xác cao, chậm.                     |
+| Fast R-CNN   | **Fast Regions with CNN**         | Cải tiến R-CNN, nhanh hơn, dùng ROI pooling.                  |
+| Faster R-CNN | **Faster Regions with CNN**       | Two-stage, ROI proposal network → chính xác hơn Fast R-CNN.   |
+| Mask R-CNN   | **Mask Regions with CNN**         | Faster R-CNN + segmentation mask.                             |
+| RetinaNet    | **Retina Networks**               | One-stage detection + Focal Loss, tốt với imbalance class.    |
+| CenterNet    | **Center-based Object Detection** | Phát hiện bằng keypoint center.                               |
+| CornerNet    | **Corner-based Object Detection** | Phát hiện bằng keypoint corners.                              |
+| DETR         | **DEtection TRansformer**         | Transformer end-to-end, không cần anchor.                     |
+| EfficientDet | **Efficient Detector**            | Nhẹ, scale tốt, balance speed & accuracy.                     |
+| NanoDet      | **Nano Detector**                 | Rất nhẹ, cho mobile/edge devices.                             |
+
+
+
+| Viết tắt      | Tên đầy đủ                                        | Mô tả                                           |
+| ------------- | ------------------------------------------------- | ----------------------------------------------- |
+| CRNN          | **Convolutional Recurrent Neural Network**        | CNN + RNN + CTC, đọc trực tiếp chuỗi ký tự.     |
+| CNN           | **Convolutional Neural Network**                  | Dùng classify từng ký tự, nếu tách ký tự riêng. |
+| LSTM          | **Long Short-Term Memory**                        | RNN cải tiến, học chuỗi dài → OCR.              |
+| GRU           | **Gated Recurrent Unit**                          | RNN đơn giản hơn LSTM, hiệu quả cho OCR.        |
+| TrOCR         | **Transformer-based OCR**                         | Dùng Transformer, accuracy cao, nặng.           |
+| Attention OCR | **Attention-based OCR**                           | CNN + RNN + Attention, đọc toàn chuỗi.          |
+| Tesseract OCR | **Tesseract Open-Source OCR Engine**              | OCR truyền thống, không DL.                     |
+| PaddleOCR     | **PaddlePaddle OCR**                              | OCR multi-language, detection + recognition.    |
+| EAST          | **Efficient and Accurate Scene Text Detector**    | Text detection trong scene.                     |
+| CRAFT         | **Character Region Awareness for Text detection** | Text detection từng ký tự, tốt cho biển số nhỏ. |
+| TextSnake     | **Text representation as a snake**                | Text detection cong / uốn lượn.                 |
+| TextField     | **TextField Detector**                            | Phát hiện text trong scene text khó.            |
+
+| Viết tắt        | Tên đầy đủ                                                       | Mô tả                                         |
+| --------------- | ---------------------------------------------------------------- | --------------------------------------------- |
+| ANPR            | **Automatic Number Plate Recognition**                           | Hệ thống phát hiện + đọc biển số tự động.     |
+| ALPR            | **Automatic License Plate Recognition**                          | Đồng nghĩa ANPR.                              |
+| OpenALPR        | **Open Automatic License Plate Recognition**                     | SDK thương mại / open-source.                 |
+| YOLO + CRNN     | **YOLO Detection + Convolutional Recurrent Neural Network OCR**  | Pipeline phổ biến ANPR.                       |
+| YOLOv8 OCR      | **YOLO version 8 with OCR head**                                 | YOLOv8 hỗ trợ detection + text recognition.   |
+| Hybrid CNN-LSTM | **Hybrid Convolutional Neural Network + Long Short-Term Memory** | CNN trích feature → LSTM dự đoán chuỗi ký tự. |
+
+| Viết tắt    | Tên đầy đủ                                        | Mô tả                           |
+| ----------- | ------------------------------------------------- | ------------------------------- |
+| EAST        | **Efficient and Accurate Scene Text Detector**    | Phát hiện text trong ảnh chung. |
+| CRAFT       | **Character Region Awareness for Text Detection** | Text detection trên từng ký tự. |
+| TextBoxes   | **Text Bounding Boxes Detection**                 | Nhẹ, hiệu quả cho số/chữ.       |
+| TextBoxes++ | **Enhanced TextBoxes**                            | Cải tiến TextBoxes.             |
+| PixelLink   | **Pixel Link Text Detection**                     | Phát hiện text ở pixel-level.   |
+
+| Viết tắt     | Tên đầy đủ                                | Mô tả                              |
+| ------------ | ----------------------------------------- | ---------------------------------- |
+| ROI          | **Region of Interest**                    | Vùng quan tâm trong ảnh (biển số). |
+| CTC          | **Connectionist Temporal Classification** | Loss function cho OCR chuỗi ký tự. |
+| FPS          | **Frames Per Second**                     | Số ảnh xử lý mỗi giây.             |
+| Latency      | **Processing Latency**                    | Thời gian xử lý / ảnh.             |
+| Augmentation | **Data Augmentation**                     | Biến đổi dữ liệu để tăng dataset.  |

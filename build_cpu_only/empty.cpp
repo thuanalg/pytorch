@@ -1,0 +1,1 @@
+__declspec(dllexport) int ignore_this_library_placeholder(){return 0;}
