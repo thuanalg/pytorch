@@ -185,7 +185,7 @@ _FAILURE_FORMAT_TEMPLATE = """[${idx}]:
   time      : ${time}
   host      : ${hostname}
   rank      : ${rank} (local_rank: ${local_rank})
-  exitcode  : ${exitcode} (pid: ${pid})
+  exitcode  : ${exitcode} (pid: ${pid}) ${signal_name}
   error_file: ${error_file}
   traceback : ${message}"""
 
@@ -294,6 +294,9 @@ class ChildFailedError(Exception):
                 .replace("\n", "\n  ")  # to properly indent the traceback
             )
 
+        signal_name = failure.signal_name()
+        signal_name_str = f" ({signal_name})" if signal_name != _NOT_AVAILABLE else ""
+
         fmt = Template(_FAILURE_FORMAT_TEMPLATE).substitute(
             idx=idx,
             time=failure.timestamp_isoformat(),
@@ -302,6 +305,7 @@ class ChildFailedError(Exception):
             local_rank=failure.local_rank,
             exitcode=failure.exitcode,
             pid=failure.pid,
+            signal_name=signal_name_str,
             error_file=failure.error_file,
             message=msg,
         )
@@ -312,8 +316,8 @@ class ChildFailedError(Exception):
 
 
 def record(
-    fn: Callable[_P, _R], error_handler: Optional[ErrorHandler] = None
-) -> Callable[_P, Union[_R, None]]:
+    fn: Callable[_P, _R], error_handler: ErrorHandler | None = None
+) -> Callable[_P, _R | None]:
     """
     Syntactic sugar to record errors/exceptions that happened in the decorated
     function using the provided ``error_handler``.
@@ -353,7 +357,7 @@ def record(
     if not error_handler:
         error_handler = get_error_handler()
 
-    def wrap(f: Callable[_P, _R]) -> Callable[_P, Union[_R, None]]:
+    def wrap(f: Callable[_P, _R]) -> Callable[_P, _R | None]:
         @wraps(f)
         def wrapper(*args: _P.args, **kwargs: _P.kwargs):
             assert error_handler is not None  # assertion for mypy type checker

@@ -30,7 +30,6 @@
 #include <torch/csrc/jit/passes/shape_analysis.h>
 #include <torch/csrc/jit/passes/specialize_autogradzero.h>
 #include <torch/csrc/jit/passes/tensorexpr_fuser.h>
-#include <torch/csrc/jit/resource_guard.h>
 #include <torch/csrc/jit/runtime/argument_spec.h>
 #include <torch/csrc/jit/runtime/autodiff.h>
 #include <torch/csrc/jit/runtime/custom_operator.h>
@@ -60,6 +59,16 @@ C10_DEFINE_bool(
     "Directly reuse the preprocessed graph in the CodeImpl to reduce the memory consumption. This is aggressive memory saving, and please be cautious!")
 
 namespace torch::jit {
+
+ExecutionPlan::ExecutionPlan(
+    std::shared_ptr<Graph> graph,
+    std::string function_name)
+    : code(graph, std::move(function_name)),
+      graph(
+          FLAGS_torch_jit_execution_plan_reuse_code_graph
+              ? code.graph()
+              : std::move(graph)) {}
+
 EnableProfilingGuard::EnableProfilingGuard() {
   auto& executor_mode = getExecutorMode();
   old_executor_mode = executor_mode;

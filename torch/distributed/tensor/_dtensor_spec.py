@@ -2,13 +2,13 @@ import itertools
 import math
 from collections import defaultdict
 from dataclasses import dataclass
-from typing import Any, cast, NamedTuple, Optional
+from typing import Any, cast, NamedTuple
 
 import torch
 from torch.distributed.device_mesh import DeviceMesh
 from torch.distributed.tensor.placement_types import (
+    _MaskPartial,
     _StridedShard,
-    MaskPartial,
     Partial,
     Placement,
     Replicate,
@@ -71,7 +71,7 @@ class DTensorSpec:
     placements: tuple[Placement, ...]
 
     # tensor meta will only be set during sharding propagation
-    tensor_meta: Optional[TensorMeta] = None
+    tensor_meta: TensorMeta | None = None
 
     # When a tensor dimension is sharded across multiple mesh axes,
     # `shard_order` specifies the sequence in which these shardings are applied.
@@ -88,13 +88,61 @@ class DTensorSpec:
     #     )
     shard_order: ShardOrder = None  # type: ignore[assignment]
 
+    # When True, _StridedShard placements encode the shard order, and the
+    # shard_order field must be left as None (it will be derived on demand).
+    # Set explicitly to False to treat _StridedShard as a regular Shard,
+    # e.g., in view propagation.
+    use_strided_shard_as_shard_order: bool | None = None
+
     def __post_init__(self) -> None:
         if not isinstance(self.placements, tuple):
             self.placements = tuple(self.placements)
-        if self.shard_order is None:
-            # pyrefly: ignore [bad-assignment]
-            self.shard_order = DTensorSpec.compute_default_shard_order(self.placements)
+        if self.use_strided_shard_as_shard_order is None:
+            if any(isinstance(p, _StridedShard) for p in self.placements):
+                self.use_strided_shard_as_shard_order = True
+            else:
+                self.use_strided_shard_as_shard_order = False
+        if self.use_strided_shard_as_shard_order:
+            if self.shard_order is not None:
+                raise ValueError(
+                    "DTensorSpec doesn't allow specify shard_order when "
+                    "use_strided_shard_as_shard_order is True. This may result "
+                    "in conflicting shard order."
+                )
+        else:
+            if self.shard_order is None:
+                self.shard_order = self.compute_default_shard_order(self.placements)
+
         self._hash: int | None = None
+
+    @staticmethod
+    def _normalize_placements_into_shard_order(
+        placements: tuple[Placement, ...],
+        mesh: DeviceMesh,
+        use_strided_shard_as_shard_order: bool = True,
+    ) -> tuple[tuple[Placement, ...], ShardOrder]:
+        # If use_strided_shard_as_shard_order, it means the StridedShard/Shard
+        # combinations should be interpreted as shard order.
+        if use_strided_shard_as_shard_order:
+            # _StridedShard in placements, try check if it can be decoded as shard order
+            shard_order = DTensorSpec._maybe_convert_StridedShard_to_shard_order(
+                placements, mesh
+            )
+            if shard_order is None:
+                raise ValueError(
+                    "use_strided_shard_as_shard_order is True, but placements: "
+                    f"{placements} is unable to be interpreted into a corresponding "
+                    "shard_order"
+                )
+            normalized_placements = tuple(
+                [
+                    p if not isinstance(p, _StridedShard) else Shard(p.dim)
+                    for p in placements
+                ]
+            )
+            return normalized_placements, shard_order
+        else:
+            return placements, DTensorSpec.compute_default_shard_order(placements)
 
     @staticmethod
     def compute_default_shard_order(
@@ -105,17 +153,18 @@ class DTensorSpec:
 
         Returns a ShardOrder where each ShardOrderEntry maps a tensor dimension
         to the mesh dimensions it's sharded on, in left-to-right order.
+
+        Args:
+            placements: Tuple of Placement objects representing how a tensor is
+                distributed across mesh dimensions.
         """
         # follow default left-to-right device order if shard_order is not specified
         tensor_dim_to_mesh_dims: defaultdict[int, list[int]] = defaultdict(list)
         mesh_ndim = len(placements)
         for mesh_dim in range(mesh_ndim):
-            # shard_order doesn't work with _StridedShard
-            if isinstance(placements[mesh_dim], _StridedShard):
-                return ()
-            if isinstance(placements[mesh_dim], Shard):
-                placement = cast(Shard, placements[mesh_dim])
-                shard_dim = placement.dim
+            if isinstance(placements[mesh_dim], Shard | _StridedShard):
+                placement = placements[mesh_dim]
+                shard_dim = placement.dim  # pyrefly: ignore [missing-attribute]
                 assert shard_dim >= 0, (
                     f"Shard dim {shard_dim} in placements {placements} must be normalized"
                 )
@@ -206,7 +255,7 @@ class DTensorSpec:
     @staticmethod
     def _maybe_convert_StridedShard_to_shard_order(
         placements: tuple[Placement, ...], mesh: DeviceMesh
-    ) -> Optional[ShardOrder]:
+    ) -> ShardOrder | None:
         """
         Try to convert _StridedShard placements to ShardOrder.
 
@@ -293,10 +342,10 @@ class DTensorSpec:
                     # _StridedShard is not convertible to ShardOrder
                     return None
             else:
-                if not isinstance(cur_placement, Replicate | Partial | MaskPartial):
+                if not isinstance(cur_placement, Replicate | Partial | _MaskPartial):
                     raise ValueError(
                         f"Unsupported placement type {type(cur_placement)} encountered in "
-                        f"{placements}; expected Replicate, Partial, or MaskPartial."
+                        f"{placements}; expected Replicate, Partial, or _MaskPartial."
                     )
         for tensor_dim in range(max_tensor_dim):
             if len(tensor_dim_to_mesh_dims_order[tensor_dim]) > 0:
@@ -429,6 +478,10 @@ class DTensorSpec:
         """
         Check if the device order is the default left-to-right order.
         """
+        if shard_order is None:
+            # Missing `shard_order` attribute, possibly due to _StridedShard in
+            # placements.
+            return False
         for entry in shard_order:
             mesh_dims = entry.mesh_dims
             is_increasing = all(
@@ -441,7 +494,7 @@ class DTensorSpec:
     @staticmethod
     def format_shard_order_str(
         placements: tuple[Placement, ...],
-        shard_order: Optional[ShardOrder] = None,
+        shard_order: ShardOrder | None = None,
     ) -> str:
         """
         Format DTensor sharding information as a human-readable string.
@@ -485,7 +538,7 @@ class DTensorSpec:
         # native dtensor-style sharding representation: map from mesh
         # dim to tensor dim
         for mesh_dim, placement in enumerate(placements):
-            if isinstance(placement, Shard):
+            if isinstance(placement, (Shard, _StridedShard)):
                 if shard_order is not None:
                     for entry in shard_order:
                         tensor_dim = entry.tensor_dim
@@ -617,7 +670,7 @@ class DTensorSpec:
         mesh: DeviceMesh,
         dim_map: list[int],
         sums: list[int],
-        tensor_meta: Optional[TensorMeta] = None,
+        tensor_meta: TensorMeta | None = None,
     ) -> "DTensorSpec":
         """
         Construct a DTensorSpec from dim_map list and pending sum.
@@ -664,12 +717,12 @@ class DTensorSpec:
 
     def is_sharded(self) -> bool:
         """
-        return True if the current DTensorSpec is sharded on any mesh dims (devices)
+        return True if the current DTensorSpec uses Shard() placement on any mesh dims (devices)
         """
         return any(placement.is_shard() for placement in self.placements)
 
     def shallow_copy_with_tensor_meta(
-        self, tensor_meta: Optional[TensorMeta]
+        self, tensor_meta: TensorMeta | None
     ) -> "DTensorSpec":
         """
         Shallow copy the DTensorSpec with a new tensor_meta.

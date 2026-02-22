@@ -16,7 +16,7 @@ from ..graph_bytecode_inputs import (
 )
 from ..source import CurrentStreamSource
 from .base import VariableTracker
-from .constant import ConstantVariable
+from .constant import CONSTANT_VARIABLE_NONE, ConstantVariable
 from .ctx_manager import FxTracebackAnnotateVariable
 from .lazy import LazyVariableTracker
 
@@ -175,6 +175,36 @@ def _(
 has_side_effect(torch.ops.streams.wait_stream.default)
 
 
+@custom_op("streams::sync_dealloc", mutates_args=())
+def sync_dealloc(
+    wait_event_index: int, src_stream_index: int, to_dealloc: torch.Tensor
+) -> None:
+    """An op which waits on an event and moves the last usage of to_dealloc
+    after the wait, so that after the sync occurs, the deallocation or
+    subsequent reuse of the tensor's memory will be guaranteed to happen
+    after a side stream is finished using it.
+    See https://docs.pytorch.org/docs/stable/generated/torch.Tensor.record_stream.html#torch.Tensor.record_stream
+    for more details"""
+    torch.ops.streams.wait_event.default(wait_event_index, src_stream_index)
+
+
+has_side_effect(torch.ops.streams.sync_dealloc.default)
+
+
+@custom_op("streams::record_stream", mutates_args=())
+def record_stream(tensor: torch.Tensor, stream_index: int) -> None:
+    tensor.record_stream(_get_stream_by_index(stream_index))
+
+
+@record_stream.register_fake
+def _(
+    src_stream_index: int,
+    wait_event_index: int,
+    to_dealloc: torch.Tensor,
+) -> None:
+    pass
+
+
 class SymbolicStreamState:
     """Track the currently entered stream if any"""
 
@@ -274,9 +304,8 @@ class StreamVariable(StreamContextVariable):
 
         self.proxy = proxy
         self.value = value
-        # pyrefly: ignore [read-only]
         self.device = value.device
-        # pyrefly: ignore [read-only]
+
         self.user_object_index = user_object_index
         super().__init__(None, **kwargs)
 
@@ -299,7 +328,7 @@ class StreamVariable(StreamContextVariable):
             tx.output.create_proxy(
                 "call_method", name, *proxy_args_kwargs([self] + args, kwargs)
             )
-            return ConstantVariable(None)
+            return CONSTANT_VARIABLE_NONE
         elif name == "query":
             return wrap_fx_proxy_cls(
                 target_cls=ConstantVariable,
@@ -326,13 +355,14 @@ class StreamVariable(StreamContextVariable):
             # constant values
             other = args[0]
             if not isinstance(other, StreamVariable):
-                return ConstantVariable.create(NotImplemented)
+                return VariableTracker.build(tx, NotImplemented)
 
             if other.source:
                 assert self.source is not None
                 install_guard(self.source.make_guard(GuardBuilder.EQUALS_MATCH))
-            return ConstantVariable.create(
-                cmp_name_to_op_mapping[name](self.value, other.value)  # type: ignore[arg-type]
+            return VariableTracker.build(
+                tx,
+                cmp_name_to_op_mapping[name](self.value, other.value),  # type: ignore[arg-type]
             )
 
         return super().call_method(tx, name, args, kwargs)
@@ -427,7 +457,7 @@ class EventVariable(VariableTracker):
                 ),
                 {},
             )
-            return ConstantVariable(None)
+            return CONSTANT_VARIABLE_NONE
         elif name == "record":
             tx.output.create_proxy(
                 "call_function",
@@ -438,12 +468,12 @@ class EventVariable(VariableTracker):
                 ),
                 {},
             )
-            return ConstantVariable(None)
+            return CONSTANT_VARIABLE_NONE
         elif name == "synchronize":
             tx.output.create_proxy(
                 "call_method", name, *proxy_args_kwargs([self] + args, kwargs)
             )
-            return ConstantVariable(None)
+            return CONSTANT_VARIABLE_NONE
         elif name == "query":
             return wrap_fx_proxy_cls(
                 target_cls=ConstantVariable,
