@@ -1,0 +1,12 @@
+#Build on CentOS-09
+1. About clone source
+    git clone --recursive https://github.com/pytorch/pytorch
+    cd pytorch
+    # Checkout a stable branch if needed, e.g., git checkout v2.1.0
+    git submodule update --init --recursive
+2. Setup env variables:
+    export USE_CUDA=0
+    export USE_MKLDNN=1
+    export USE_NNPACK=0
+    export USE_QNNPACK=0
+    python setup.py install
