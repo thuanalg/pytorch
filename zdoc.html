@@ -1,0 +1,136 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Planning project</title>
+    <style>
+        body { font-family: 'Segoe UI', Tahoma, sans-serif; padding: 20px; background-color: #f4f7f9; }
+        
+        .table-container { 
+            max-height: 450px; 
+            overflow-y: auto; 
+            background: white; 
+            border-radius: 12px; 
+            box-shadow: 0 10px 25px rgba(0,0,0,0.1); 
+            border: 1px solid #e1e4e8;
+        }
+
+        table { width: 100%; border-collapse: collapse; min-width: 850px; }
+
+        /* FIXED BLUE HEADER WITH WHITE TEXT */
+        thead th { 
+            background-color: #0062cc; /* Professional Blue */
+            color: #ffffff !important; /* FORCED WHITE TEXT */
+            position: sticky; 
+            top: 0; 
+            z-index: 100;
+            padding: 18px 15px;
+            text-align: left;
+            font-size: 13px;
+            font-weight: 700;
+            text-transform: uppercase;
+            letter-spacing: 1px;
+            box-shadow: 0 2px 5px rgba(0,0,0,0.1); /* Separator shadow when scrolling */
+        }
+
+        td { padding: 14px 15px; border-bottom: 1px solid #f0f0f0; color: #444; }
+        tr:hover { background-color: #f9fbff; }
+
+        /* STATUS DROPDOWN STYLING */
+        .status-select {
+            padding: 6px 12px;
+            border-radius: 20px;
+            border: 1px solid #ddd;
+            font-size: 12px;
+            font-weight: 700;
+            cursor: pointer;
+            outline: none;
+            width: 140px;
+            text-align: center;
+            transition: all 0.3s ease;
+        }
+
+        /* Initial colors for the dropdowns */
+        .status-new { background-color: #e2e8f0; color: #475569; }
+        .status-feasible { background-color: #e0f2fe; color: #0369a1; }
+        .status-progress { background-color: #fef3c7; color: #92400e; }
+        .status-review { background-color: #ede9fe; color: #5b21b6; }
+        .status-done { background-color: #dcfce7; color: #166534; }
+
+        .col-idx { width: 40px; text-align: center; color: #999; }
+        .col-action { width: 180px; font-weight: 600; color: #1a202c; }
+        .col-timeline { width: 160px; font-family: 'Courier New', monospace; font-size: 13px; }
+    </style>
+</head>
+<body>
+
+<div class="table-container">
+    <table>
+        <thead>
+            <tr>
+                <th class="col-idx">#</th>
+                <th class="col-action">Action</th>
+                <th>Description</th>
+                <th style="width: 160px;">Status</th>
+                <th class="col-timeline">Timeline</th>
+            </tr>
+        </thead>
+        <tbody>
+            <tr>
+                <td class="col-idx">01</td>
+                <td class="col-action">Market Analysis</td>
+                <td>Analyzing competitors for the strategy.</td>
+                <td>
+                    <select class="status-select status-progress" onchange="updateStatus(this)">
+                        <option value="status-new">NEW</option>
+                        <option value="status-feasible">FEASIBLE</option>
+                        <option value="status-progress" selected>IN PROGRESS</option>
+                        <option value="status-review">REVIEW</option>
+                        <option value="status-done">DONE</option>
+                    </select>
+                </td>
+                <td class="col-timeline">Apr 01 - Apr 05</td>
+            </tr>
+            <tr>
+                <td class="col-idx">02</td>
+                <td class="col-action">Frontend Layout</td>
+                <td>Building the responsive table interface.</td>
+                <td>
+                    <select class="status-select status-done" onchange="updateStatus(this)">
+                        <option value="status-new">NEW</option>
+                        <option value="status-feasible">FEASIBLE</option>
+                        <option value="status-progress">IN PROGRESS</option>
+                        <option value="status-review">REVIEW</option>
+                        <option value="status-done" selected>DONE</option>
+                    </select>
+                </td>
+                <td class="col-timeline">Apr 06 - Apr 08
+                    
+                </td>
+            </tr>
+            <!-- More rows for scrolling -->
+            <tr><td class="col-idx">03</td><td><b>Data Integration</b></td><td>API connections...</td>
+                <td><select class="status-select status-new" onchange="updateStatus(this)">
+                    <option value="status-new" selected>NEW</option>
+                    <option value="status-feasible">FEASIBLE</option>
+                    <option value="status-progress">IN PROGRESS</option>
+                    <option value="status-review">REVIEW</option>
+                    <option value="status-done">DONE</option>
+                </select></td><td>Apr 10 - Apr 15</td></tr>
+        </tbody>
+    </table>
+</div>
+
+<script>
+    // Simple script to update dropdown color based on selection
+    function updateStatus(selectElement) {
+        // Remove all status classes
+        selectElement.classList.remove('status-new', 'status-feasible', 'status-progress', 'status-review', 'status-done');
+        // Add the class matching the selected value
+        selectElement.classList.add(selectElement.value);
+    }
+</script>
+
+</body>
+</html>
